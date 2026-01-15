@@ -317,7 +317,7 @@
         if(b.volume_restant_ml < b.volume_ml*0.2) alerts.push({text:`📉 ${b.nom} bientôt vide`});
       });
       const c = document.getElementById('alertsContainer');
-      c.innerHTML = alerts.length ? alerts.map(a=>`<div class="alert-card">${a.text}</div>`).join('') : '<div style="text-align:center;
+      c.innerHTML = alerts.length ? alerts.map(a=>`<div class="alert-card">${a.text}</div>`).join('') : '<div style="text-align:center;">Aucune alerte</div>';
     }
 
     function toggleFabMenu() {
