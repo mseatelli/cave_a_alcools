@@ -308,17 +308,19 @@
     }
 
     async function checkAlerts() {
-      const alerts = [];
-      allBottles.forEach(b => {
-        if(b.statut==='ouverte'&&b.date_ouverture&&b.duree_conservation_jours) {
-          const days = (new Date()-new Date(b.date_ouverture))/86400000;
-          if(days >= b.duree_conservation_jours*0.8) alerts.push({text:`⚠️ ${b.nom} ouvert depuis ${Math.floor(days)} jours`});
+    const alerts = [];
+    allBottles.forEach(b => {
+        if(b.statut === 'ouverte' && b.date_ouverture && b.duree_conservation_jours) {
+            const days = (new Date() - new Date(b.date_ouverture)) / 86400000;
+            if(days >= b.duree_conservation_jours * 0.8) alerts.push({text: `⚠️ ${b.nom} ouvert depuis ${Math.floor(days)} jours`});
         }
-        if(b.volume_restant_ml < b.volume_ml*0.2) alerts.push({text:`📉 ${b.nom} bientôt vide`});
-      });
-      const c = document.getElementById('alertsContainer');
-      c.innerHTML = alerts.length ? alerts.map(a=>`<div class="alert-card">${a.text}</div>`).join('') : '<div style="text-align:center;">Aucune alerte</div>';
-    }
+        if(b.volume_restant_ml < b.volume_ml * 0.2) alerts.push({text: `📉 ${b.nom} bientôt vide`});
+    });
+
+    const c = document.getElementById('alertsContainer');
+    // LIGNE 320 CORRIGÉE CI-DESSOUS
+    c.innerHTML = alerts.length ? alerts.map(a => `<div class="alert-card">${a.text}</div>`).join('') : '<div style="text-align:center;">Aucune alerte</div>';
+}
 
     function toggleFabMenu() {
       document.getElementById('fabMenu').classList.toggle('active');
