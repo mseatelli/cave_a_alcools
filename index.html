@@ -181,9 +181,9 @@
             </div>
           </div>
           <div class="form-group"><label>Nom *</label><input type="text" id="inputNom" required></div>
-          <div class="form-group" style="border:2px solid var(--primary);padding:1rem;border-radius:8px;background:rgba(143,94,38,0.1);">
-            <label style="color:var(--primary);font-weight:bold;">📷 CODE-BARRE</label>
-            <input type="text" id="inputCodeBarre" placeholder="Ex: 3760074380213" style="font-family:monospace;font-size:1.2rem;letter-spacing:3px;text-align:center;font-weight:bold;">
+          <div class="form-group">
+            <label>📷 Code-barre</label>
+            <input type="text" id="inputCodeBarre" placeholder="Ex: 3760074380213" style="font-family:monospace;letter-spacing:2px;">
           </div>
           <div class="form-row">
             <div class="form-group"><label>Type *</label>
@@ -226,8 +226,8 @@
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://tluwuifaoyxckudszrnd.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsdXd1aWZhb3l4Y2t1ZHN6cm5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODYzMTMsImV4cCI6MjA4Mjk2MjMxM30.-cT8W6RH-OJDsJigGsY6iGsDAvKDRHm6cOLM5WJAWdM';
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null, allBottles = [], editingBottleId = null, uploadedPhoto = null, scannerStream = null, codeReader = null, charts = {};
 
@@ -317,7 +317,7 @@
         if(b.volume_restant_ml < b.volume_ml*0.2) alerts.push({text:`📉 ${b.nom} bientôt vide`});
       });
       const c = document.getElementById('alertsContainer');
-      c.innerHTML = alerts.length ? alerts.map(a=>'<div class="alert-card">'+a.text+'</div>').join('') : '<div style="text-align:center;padding:3rem;"><div style="font-size:4rem;">✅</div><h3>Aucune alerte</h3></div>';
+      c.innerHTML = alerts.length ? alerts.map(a=>`<div class="alert-card">${a.text}</div>`).join('') : '<div style="text-align:center;
     }
 
     function toggleFabMenu() {
