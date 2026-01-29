@@ -273,7 +273,7 @@
       c.innerHTML = ''; c.className = 'bottles-grid';
       bottles.forEach(b => {
         const percent = (b.volume_restant_ml / b.volume_ml * 100).toFixed(0);
-        const emoji = {vin:'🍷',whisky:'🥃',rhum:'🥃',vodka:'🍸',gin:'🍸',biere:'🍺',champagne:'🍾',liqueur:'🍹',cognac:'🥃'}[b.type_alcool]||'🍾';
+        const emoji = {vin:'🍷',whisky:'🥃',rhum:'🥃',pastis:'🍸',vodka:'🍸',gin:'🍸',biere:'🍺',champagne:'🍾',liqueur:'🍹',cognac:'🥃'}[b.type_alcool]||'🍾';
         c.innerHTML += `<div class="bottle-card" onclick='openEditModal(${JSON.stringify(b).replace(/'/g,"&apos;")})'>
           <div class="bottle-image">${b.photo_url?`<img src="${b.photo_url}">`:`${emoji}`}<div class="bottle-status status-${b.statut}">${b.statut}</div></div>
           <div class="bottle-content"><div class="bottle-name">${b.nom}</div><div class="bottle-type">${b.type_alcool.toUpperCase()}</div>
