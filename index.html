@@ -1,223 +1,1163 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tempus Vinum - Précision Cave</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #1a1a2e, #16213e); color: #333; padding: 20px; min-height: 100vh; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; }
-        header { background: #8B0000; color: white; padding: 20px; text-align: center; }
-        .tabs { display: flex; background: #f0f0f0; }
-        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; border: none; font-weight: bold; }
-        .tab.active { background: white; color: #8B0000; border-bottom: 3px solid #8B0000; }
-        .tab-content { display: none; padding: 20px; }
-        .tab-content.active { display: block; }
-        
-        /* Grille */
-        .cellar-grid { display: grid; gap: 8px; padding: 15px; background: #222; border-radius: 8px; }
-        .cell { aspect-ratio: 1; background: #444; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; color: #ccc; text-align: center; transition: 0.2s; border: 1px solid #555; }
-        .cell.filled.red { background: #8B0000; color: white; }
-        .cell.filled.white { background: #F4D03F; color: #333; }
-        .cell.filled.rose { background: #FF85A1; color: white; }
-        .cell.filled.champagne { background: #D4AF37; color: #333; }
-        .cell.vide { opacity: 0.3; filter: grayscale(1); }
-
-        /* Stats */
-        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-        .stat-card { background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; border-left: 5px solid #8B0000; }
-        
-        /* Formulaire */
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-        .range-container { background: #f0f0f0; padding: 10px; border-radius: 5px; margin-top: 5px; display: none; }
-        
-        /* Modal */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
-        .modal.active { display: flex; }
-        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; }
-        button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-main { background: #8B0000; color: white; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ma Cave à Alcools Pro</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #8f5e26; --primary-dark: #6d4419; --secondary: #c49a6c;
+      --bg: #1a1a1a; --bg-card: #2a2a2a; --text: #e0e0e0; --text-dim: #a0a0a0;
+      --success: #4caf50; --warning: #ff9800; --danger: #f44336;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+    header { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); padding: 1.5rem 0; box-shadow: 0 2px 10px rgba(0,0,0,0.3); position: sticky; top: 0; z-index: 100; }
+    header .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    h1 { font-size: 1.8rem; display: flex; align-items: center; gap: 0.5rem; }
+    .user-info { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    button { background: var(--primary); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: all 0.3s; font-weight: 500; }
+    button:hover { background: var(--primary-dark); transform: translateY(-2px); }
+    .btn-secondary { background: var(--bg-card); border: 1px solid var(--secondary); }
+    .btn-danger { background: var(--danger); }
+    input, select, textarea { width: 100%; padding: 0.8rem; margin-bottom: 1rem; background: var(--bg); border: 1px solid #444; border-radius: 8px; color: var(--text); font-size: 1rem; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
+    .tabs { display: flex; gap: 0.5rem; margin: 2rem 0; border-bottom: 2px solid #333; overflow-x: auto; }
+    .tab { padding: 0.8rem 1.5rem; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
+    .tab.active { border-bottom-color: var(--primary); color: var(--primary); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0; }
+    .stat-card { background: var(--bg-card); padding: 1.5rem; border-radius: 12px; text-align: center; border: 1px solid #333; }
+    .stat-value { font-size: 2rem; font-weight: bold; color: var(--primary); margin: 0.5rem 0; }
+    .stat-label { color: var(--text-dim); font-size: 0.9rem; }
+    .chart-container { background: var(--bg-card); padding: 2rem; border-radius: 12px; margin: 2rem 0; border: 1px solid #333; }
+    .bottles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin: 2rem 0; }
+    .bottle-card { background: var(--bg-card); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: transform 0.3s; cursor: pointer; border: 1px solid #333; }
+    .bottle-card:hover { transform: translateY(-5px); box-shadow: 0 8px 24px rgba(143, 94, 38, 0.3); }
+    .bottle-image { height: 200px; background: linear-gradient(135deg, #2a2a2a, #3a3a3a); display: flex; align-items: center; justify-content: center; font-size: 4rem; position: relative; overflow: hidden; }
+    .bottle-image img { width: 100%; height: 100%; object-fit: cover; }
+    .bottle-status { position: absolute; top: 10px; right: 10px; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+    .status-scellee { background: var(--success); }
+    .status-ouverte { background: var(--warning); }
+    .status-vide { background: var(--danger); }
+    .bottle-alert { position: absolute; top: 10px; left: 10px; background: var(--danger); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.75rem; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+    .bottle-content { padding: 1.5rem; }
+    .bottle-name { font-size: 1.3rem; font-weight: bold; margin-bottom: 0.5rem; color: var(--secondary); }
+    .bottle-type { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1rem; }
+    .progress-bar { width: 100%; height: 8px; background: #333; border-radius: 10px; overflow: hidden; margin: 1rem 0; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.3s; }
+    .bottle-details { display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-dim); margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #333; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto; padding: 2rem; }
+    .modal.active { display: flex; align-items: center; justify-content: center; }
+    .modal-content { background: var(--bg-card); padding: 2rem; border-radius: 16px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .close-btn { background: transparent; font-size: 2rem; padding: 0; width: 40px; height: 40px; border-radius: 50%; }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; color: var(--secondary); font-weight: 500; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .actions { display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end; flex-wrap: wrap; }
+    .image-upload { border: 2px dashed #444; border-radius: 8px; padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.3s; }
+    .image-upload:hover { border-color: var(--primary); }
+    .image-preview { max-width: 100%; max-height: 200px; margin-top: 1rem; border-radius: 8px; }
+    .pairing-list { list-style: none; padding: 0; }
+    .pairing-item { padding: 0.8rem; background: var(--bg); margin: 0.5rem 0; border-radius: 8px; border-left: 3px solid var(--primary); }
+    .fab { position: fixed; bottom: 2rem; right: 2rem; width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; font-size: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.3s; z-index: 99; }
+    .fab:hover { transform: scale(1.1) rotate(45deg); }
+    .fab-menu { position: fixed; bottom: 5rem; right: 2rem; display: none; flex-direction: column; gap: 0.5rem; z-index: 98; }
+    .fab-menu.active { display: flex; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .fab-item { background: var(--bg-card); padding: 0.8rem 1rem; border-radius: 30px; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.3s; border: 1px solid var(--primary); white-space: nowrap; }
+    .fab-item:hover { background: var(--primary); transform: translateX(-5px); }
+    .alert-card { background: var(--bg-card); padding: 1.5rem; border-radius: 12px; margin: 1rem 0; border-left: 4px solid var(--warning); }
+    .notification { position: fixed; top: 5rem; right: 2rem; background: var(--success); color: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 1001; animation: slideIn 0.3s; }
+    @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @media (max-width: 768px) {
+      h1 { font-size: 1.3rem; }
+      .bottles-grid { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .modal { padding: 1rem; }
+      .user-info button { font-size: 0.9rem; padding: 0.5rem 0.8rem; }
+    }
+  </style>
 </head>
 <body>
-
-<div class="container">
-    <header><h1>Tempus Vinum</h1></header>
-    <div class="tabs">
-        <div class="tab active" onclick="showTab('cellar')">Cave</div>
-        <div class="tab" onclick="showTab('inventory')">Collection</div>
-        <div class="tab" onclick="showTab('config')">Config</div>
+  <div id="authScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #1a1a1a 0%, #2a2020 100%);">
+    <div style="background:var(--bg-card);padding:2rem;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.4);width:100%;max-width:400px;">
+      <h2 style="margin-bottom:1.5rem;text-align:center;color:var(--secondary);">🍷 Ma Cave à Alcools</h2>
+      <input type="email" id="authEmail" placeholder="Email" required>
+      <input type="password" id="authPassword" placeholder="Mot de passe" required>
+      <button onclick="login()" style="width:100%;margin-bottom:0.5rem">Se connecter</button>
+      <button onclick="signup()" class="btn-secondary" style="width:100%">Créer un compte</button>
+      <div id="authError" style="color:var(--danger);margin-top:1rem;text-align:center;"></div>
     </div>
+  </div>
 
-    <div id="cellar" class="tab-content active">
-        <div class="stats">
-            <div class="stat-card"><h3 id="stat-total">0</h3><p>Unités</p></div>
-            <div class="stat-card"><h4 id="stat-volume">0.00 L</h4><p>Restant</p></div>
-            <div class="stat-card"><h4 id="stat-value">0€</h4><p>Valeur</p></div>
+  <div id="mainApp" style="display:none">
+    <header>
+      <div class="container">
+        <h1>🍷 Ma Cave Pro</h1>
+        <div class="user-info">
+          <button onclick="exportPDF()" title="Exporter en PDF">📄</button>
+          <button onclick="exportExcel()" title="Exporter en Excel">📊</button>
+          <span id="userEmail" style="display:none;"></span>
+          <button onclick="logout()" class="btn-danger">Déconnexion</button>
         </div>
-        <button class="btn-main" style="width:100%; margin-bottom:15px;" onclick="quickScan()">📷 Scanner un vin</button>
-        <div id="grid-main" class="cellar-grid"></div>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('collection')">📚 Collection</button>
+        <button class="tab" onclick="switchTab('stats')">📊 Statistiques</button>
+        <button class="tab" onclick="switchTab('alerts')">🔔 Alertes</button>
+        <button class="tab" onclick="switchTab('account')">👤 Mon compte</button>
+      </div>
+
+      <div id="collectionTab" class="tab-content active">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Total bouteilles</div><div class="stat-value" id="statTotal">0</div></div>
+          <div class="stat-card"><div class="stat-label">Valeur totale</div><div class="stat-value" id="statValue">0 €</div></div>
+          <div class="stat-card"><div class="stat-label">Volume restant</div><div class="stat-value" id="statVolume">0 L</div></div>
+          <div class="stat-card"><div class="stat-label">Bouteilles ouvertes</div><div class="stat-value" id="statOpen">0</div></div>
+        </div>
+        <div style="display:flex;gap:1rem;margin:2rem 0;flex-wrap:wrap;">
+          <input type="text" id="searchInput" placeholder="🔍 Rechercher..." oninput="filterBottles()" style="flex:1;min-width:200px;">
+          <select id="filterType" onchange="filterBottles()">
+            <option value="">Tous les types</option>
+            <option value="vin">Vin</option><option value="whisky">Whisky</option><option value="rhum">Rhum</option>
+            <option value="vodka">Vodka</option><option value="gin">Gin</option><option value="biere">Bière</option>
+            <option value="champagne">Champagne</option><option value="liqueur">Liqueur</option>
+          </select>
+          <select id="filterStatus" onchange="filterBottles()">
+            <option value="">Tous les statuts</option>
+            <option value="scellee">Scellée</option><option value="ouverte">Ouverte</option><option value="vide">Vide</option>
+          </select>
+        </div>
+        <div id="bottlesContainer" style="text-align:center;padding:3rem;color:var(--text-dim);">Chargement...</div>
+      </div>
+
+      <div id="statsTab" class="tab-content">
+        <div class="chart-container"><h3>Répartition par type</h3><canvas id="typeChart"></canvas></div>
+        <div class="chart-container"><h3>Évolution de la valeur</h3><canvas id="valueChart"></canvas></div>
+        <div class="chart-container"><h3>Top 10 par valeur</h3><canvas id="topChart"></canvas></div>
+      </div>
+
+      <div id="alertsTab" class="tab-content">
+        <h2 style="margin-bottom:1.5rem">🔔 Alertes et notifications</h2>
+        <div id="alertsContainer"></div>
+      </div>
+
+      <div id="accountTab" class="tab-content">
+        <h2 style="margin-bottom:1.5rem">👤 Mon compte</h2>
+        
+        <div class="chart-container">
+          <h3>Informations du compte</h3>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="profileEmail" readonly style="background:#333;">
+          </div>
+          <div class="form-group">
+            <label>Nom d'utilisateur</label>
+            <input type="text" id="profileUsername" placeholder="Votre pseudo">
+          </div>
+          <div class="form-group">
+            <label>Rôle</label>
+            <input type="text" id="profileRole" readonly style="background:#333;">
+          </div>
+          <button onclick="updateProfile()">Mettre à jour le profil</button>
+        </div>
+
+        <div class="chart-container" style="margin-top:2rem;">
+          <h3>Changer le mot de passe</h3>
+          <div class="form-group">
+            <label>Nouveau mot de passe</label>
+            <input type="password" id="newPassword" placeholder="Min. 6 caractères">
+          </div>
+          <div class="form-group">
+            <label>Confirmer le mot de passe</label>
+            <input type="password" id="confirmPassword" placeholder="Retapez le mot de passe">
+          </div>
+          <button onclick="changePassword()">Changer le mot de passe</button>
+        </div>
+
+        <div class="chart-container" style="margin-top:2rem;border-color:var(--danger);">
+          <h3 style="color:var(--danger);">Zone dangereuse</h3>
+          <p style="color:var(--text-dim);margin:1rem 0;">La suppression de votre compte est irréversible.</p>
+          <button onclick="deleteAccount()" class="btn-danger">Supprimer mon compte</button>
+        </div>
+      </div>
     </div>
 
-    <div id="inventory" class="tab-content">
-        <div id="inventory-list"></div>
+    <div class="fab-menu" id="fabMenu">
+      <div class="fab-item" onclick="openAddModal();closeFabMenu()">➕ Ajouter manuellement</div>
+      <div class="fab-item" onclick="openScanModal();closeFabMenu()">📷 Scanner code-barre</div>
     </div>
+    <div class="fab" id="fabBtn" onclick="toggleFabMenu()">+</div>
 
-    <div id="config" class="tab-content">
-        <label>Colonnes de la cave</label>
-        <input type="number" id="cfg-cols" value="6" onchange="updateConfig()">
-        <br><br>
-        <button onclick="exportData()">📤 Exporter JSON</button>
-    </div>
-</div>
-
-<div id="wineModal" class="modal">
-    <div class="modal-content">
-        <form id="wineForm">
-            <input type="hidden" id="f-pos">
-            <div class="form-group"><label>Domaine</label><input type="text" id="f-domaine" required></div>
-            <div class="form-row" style="display:flex; gap:10px;">
-                <div class="form-group" style="flex:1"><label>Contenance (ml)</label><input type="number" id="f-volume" value="750"></div>
-                <div class="form-group" style="flex:1">
-                    <label>Couleur</label>
-                    <select id="f-couleur">
-                        <option value="red">Rouge</option>
-                        <option value="white">Blanc</option>
-                        <option value="rose">Rosé</option>
-                    </select>
-                </div>
+    <div id="bottleModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header"><h2 id="modalTitle">Ajouter une bouteille</h2><button class="close-btn" onclick="closeModal()">×</button></div>
+        <form id="bottleForm" onsubmit="saveBottle(event)">
+          <div class="form-group">
+            <label>📸 Photo</label>
+            <div class="image-upload" onclick="document.getElementById('photoInput').click()">
+              <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="previewImage(event)">
+              <div id="uploadText">Cliquez pour ajouter une photo</div>
+              <img id="imagePreview" class="image-preview" style="display:none">
             </div>
-            <div class="form-group">
-                <label>État de conservation</label>
-                <select id="f-status" onchange="toggleRange()">
-                    <option value="sealed">Scellée (100%)</option>
-                    <option value="open">Ouverte (Sur mesure)</option>
-                    <option value="empty">Vide (0%)</option>
-                </select>
+          </div>
+          <div class="form-group"><label>Nom *</label><input type="text" id="inputNom" required></div>
+          <div class="form-row">
+            <div class="form-group"><label>Type *</label>
+              <select id="inputType" required onchange="updatePairings()">
+                <option value="vin">Vin</option><option value="whisky">Whisky</option><option value="rhum">Rhum</option>
+                <option value="vodka">Vodka</option><option value="gin">Gin</option><option value="cognac">Cognac</option>
+                <option value="biere">Bière</option><option value="champagne">Champagne</option>
+                <option value="liqueur">Liqueur</option><option value="autre">Autre</option>
+              </select>
             </div>
-            <div id="range-box" class="range-container">
-                <label>Niveau de remplissage : <span id="range-val">50</span>%</label>
-                <input type="range" id="f-percent" min="1" max="99" value="50" oninput="document.getElementById('range-val').innerText=this.value">
-            </div>
-            <div class="form-group"><label>Prix (€)</label><input type="number" id="f-prix" step="0.01"></div>
-            <div style="display:flex; gap:10px; margin-top:15px;">
-                <button type="submit" class="btn-main">Enregistrer</button>
-                <button type="button" onclick="deleteWine()" style="background:#ddd">Supprimer</button>
-                <button type="button" onclick="closeModal()" style="background:#eee">Fermer</button>
-            </div>
+            <div class="form-group"><label>Degré (%)</label><input type="number" id="inputDegre" step="0.1" min="0" max="100"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Volume (ml) *</label><input type="number" id="inputVolume" required></div>
+            <div class="form-group"><label>Nombre</label><input type="number" id="inputNombre" value="1" min="1"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Prix (€)</label><input type="number" id="inputPrix" step="0.01" min="0"></div>
+            <div class="form-group"><label>Date d'achat</label><input type="date" id="inputDateAchat"></div>
+          </div>
+          <div class="form-group"><label>Pays / Région</label><input type="text" id="inputPays" placeholder="Ex: France, Bordeaux"></div>
+          <div class="form-group"><label>Millésime</label><input type="number" id="inputMillesime" min="1900" max="2030"></div>
+          <div class="form-group"><label>Commentaire</label><textarea id="inputCommentaire" rows="3"></textarea></div>
+          <div class="form-group" id="pairingsSection" style="display:none">
+            <label>🍽️ Accords mets recommandés</label>
+            <ul class="pairing-list" id="pairingsList"></ul>
+          </div>
+          <div class="actions">
+            <button type="button" onclick="deleteBottle()" class="btn-danger" id="deleteBtn" style="display:none">Supprimer</button>
+            <button type="button" onclick="closeModal()" class="btn-secondary">Annuler</button>
+            <button type="submit">Enregistrer</button>
+          </div>
         </form>
+      </div>
     </div>
-</div>
 
-<script>
-    let db = { config: { rows: 5, cols: 6 }, wines: {} };
+    <div id="scanModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header"><h2>📷 Scanner un code-barre</h2><button class="close-btn" onclick="closeScanModal()">×</button></div>
+        <div style="text-align:center;">
+          <video id="scannerVideo" style="width:100%;max-width:400px;border-radius:8px;background:#000;"></video>
+          <div id="scanResult" style="margin-top:1rem;color:var(--success);"></div>
+          <button onclick="closeScanModal()" class="btn-secondary" style="margin-top:1rem;">Annuler</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    window.onload = () => {
-        const saved = localStorage.getItem('tv_v4');
-        if(saved) db = JSON.parse(saved);
-        renderAll();
-    };
-
-    function showTab(id) {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        if(id === 'inventory') renderInventory();
-    }
-
-    function toggleRange() {
-        const status = document.getElementById('f-status').value;
-        document.getElementById('range-box').style.display = (status === 'open') ? 'block' : 'none';
-    }
-
-    function renderAll() {
-        const grid = document.getElementById('grid-main');
-        grid.innerHTML = '';
-        grid.style.gridTemplateColumns = `repeat(${db.config.cols}, 1fr)`;
-        for(let i=0; i < (db.config.rows * db.config.cols); i++) {
-            const wine = db.wines[i];
-            const cell = document.createElement('div');
-            cell.className = 'cell' + (wine ? ` filled ${wine.couleur}` : '') + (wine?.status === 'empty' ? ' vide' : '');
-            cell.innerHTML = wine ? `<b>${wine.domaine}</b><br>${wine.percent}%` : i+1;
-            cell.onclick = () => openModal(i);
-            grid.appendChild(cell);
-        }
-        updateStats();
-        localStorage.setItem('tv_v4', JSON.stringify(db));
-    }
-
-    function updateStats() {
-        let volTotal = 0, valTotal = 0;
-        Object.values(db.wines).forEach(w => {
-            volTotal += (w.volume * w.percent / 100);
-            valTotal += parseFloat(w.prix || 0);
-        });
-        document.getElementById('stat-total').innerText = Object.keys(db.wines).length;
-        document.getElementById('stat-volume').innerText = (volTotal / 1000).toFixed(2) + " L";
-        document.getElementById('stat-value').innerText = valTotal.toFixed(2) + " €";
-    }
-
-    function openModal(pos) {
-        document.getElementById('wineForm').reset();
-        document.getElementById('f-pos').value = pos;
-        const wine = db.wines[pos];
-        if(wine) {
-            document.getElementById('f-domaine').value = wine.domaine;
-            document.getElementById('f-volume').value = wine.volume;
-            document.getElementById('f-couleur').value = wine.couleur;
-            document.getElementById('f-status').value = wine.status;
-            document.getElementById('f-percent').value = wine.percent;
-            document.getElementById('f-prix').value = wine.prix;
-            document.getElementById('range-val').innerText = wine.percent;
-        }
-        toggleRange();
-        document.getElementById('wineModal').classList.add('active');
-    }
-
-    document.getElementById('wineForm').onsubmit = (e) => {
-        e.preventDefault();
-        const pos = document.getElementById('f-pos').value;
-        const status = document.getElementById('f-status').value;
-        let pct = 100;
-        if(status === 'open') pct = document.getElementById('f-percent').value;
-        if(status === 'empty') pct = 0;
-
-        db.wines[pos] = {
-            domaine: document.getElementById('f-domaine').value,
-            volume: document.getElementById('f-volume').value,
-            couleur: document.getElementById('f-couleur').value,
-            status: status,
-            percent: pct,
-            prix: document.getElementById('f-prix').value
-        };
-        closeModal(); renderAll();
-    };
-
-    function renderInventory() {
-        const list = document.getElementById('inventory-list');
-        list.innerHTML = '';
-        Object.values(db.wines).forEach(w => {
-            const div = document.createElement('div');
-            div.style = "padding:10px; border-bottom:1px solid #eee";
-            div.innerHTML = `<strong>${w.domaine}</strong> - ${w.percent}% restant (${(w.volume * w.percent / 100)}ml)`;
-            list.appendChild(div);
-        });
-    }
-
-    function deleteWine() { delete db.wines[document.getElementById('f-pos').value]; closeModal(); renderAll(); }
-    function closeModal() { document.getElementById('wineModal').classList.remove('active'); }
-    function updateConfig() { db.config.cols = document.getElementById('cfg-cols').value; renderAll(); }
-    function exportData() { window.open("data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db))); }
+  <script>
+    // Configuration Supabase - REMPLACE PAR TES VRAIES CLÉS
+    const SUPABASE_URL = 'https://tluwuifaoyxckudszrnd.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsdXd1aWZhb3l4Y2t1ZHN6cm5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODYzMTMsImV4cCI6MjA4Mjk2MjMxM30.-cT8W6RH-OJDsJigGsY6iGsDAvKDRHm6cOLM5WJAWdM';
     
-    async function quickScan() {
-        const code = prompt("Code-barres ?");
-        if(!code) return;
-        let p = -1; for(let i=0; i<30; i++) { if(!db.wines[i]) { p=i; break; } }
-        if(p!==-1) openModal(p);
+    // Vérification du chargement de Supabase
+    if (typeof supabase === 'undefined') {
+      console.error('❌ Supabase non chargé !');
+      alert('Erreur de chargement. Rechargez la page.');
     }
-</script>
+    
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let currentUser = null, allBottles = [], editingBottleId = null, uploadedPhoto = null;
+    let scannerStream = null;
+    let codeReader = null;
+    let charts = {};
+    
+    const FOOD_PAIRINGS = {
+      vin: ['Viandes rouges', 'Fromages affinés', 'Gibier', 'Plats en sauce'],
+      whisky: ['Chocolat noir', 'Cigares', 'Fruits secs', 'Fromages corsés'],
+      rhum: ['Desserts au chocolat', 'Fruits tropicaux', 'Cigares'],
+      vodka: ['Caviar', 'Poissons fumés', 'Zakouski'],
+      gin: ['Poissons grillés', 'Fruits de mer', 'Salades'],
+      cognac: ['Chocolat', 'Foie gras', 'Cigares', 'Fromages bleus'],
+      biere: ['Burgers', 'Pizzas', 'Saucisses', 'Fromages doux'],
+      champagne: ['Fruits de mer', 'Caviar', 'Fromages à pâte molle', 'Desserts légers'],
+      liqueur: ['Desserts', 'Glaces', 'Café'], autre: ['À déguster selon vos préférences']
+    };
+
+    async function init() {
+      console.log('🚀 Init app...');
+      
+      // Debug visuel sur mobile
+      const debugDiv = document.createElement('div');
+      debugDiv.id = 'mobileDebug';
+      debugDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:black;color:lime;padding:10px;font-size:10px;max-height:100px;overflow:auto;z-index:9999;display:none;';
+      document.body.appendChild(debugDiv);
+      
+      window.onerror = (msg, url, line) => {
+        debugDiv.style.display = 'block';
+        debugDiv.innerHTML += `<br>❌ ${msg} (${line})`;
+      };
+      
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      console.log('Session:', session ? 'OK' : 'Aucune');
+      
+      session ? (currentUser = session.user, showMainApp()) : showAuthScreen();
+      supabaseClient.auth.onAuthStateChange((e, s) => {
+        console.log('Auth change:', e);
+        s ? (currentUser = s.user, showMainApp()) : showAuthScreen();
+      });
+      requestNotificationPermission();
+    }
+
+    function showAuthScreen() {
+      document.getElementById('authScreen').style.display = 'flex';
+      document.getElementById('mainApp').style.display = 'none';
+    }
+
+    function showMainApp() {
+      console.log('📱 Affichage app principale');
+      document.getElementById('authScreen').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      console.log('👤 User:', currentUser.email);
+      loadBottles(); 
+      checkAlerts();
+    }
+
+    async function signup() {
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+      const errorDiv = document.getElementById('authError');
+      
+      // Validation
+      if (!email || !email.includes('@')) {
+        errorDiv.textContent = '❌ Email invalide';
+        errorDiv.style.color = 'var(--danger)';
+        return;
+      }
+      if (password.length < 6) {
+        errorDiv.textContent = '❌ Mot de passe trop court (min. 6 caractères)';
+        errorDiv.style.color = 'var(--danger)';
+        return;
+      }
+      
+      errorDiv.textContent = '⏳ Création du compte...';
+      errorDiv.style.color = 'var(--warning)';
+      
+      console.log('Tentative signup avec:', email);
+      const { data, error } = await supabaseClient.auth.signUp({ email, password });
+      
+      if (error) {
+        console.error('Erreur signup:', error);
+        errorDiv.textContent = '❌ ' + error.message;
+        errorDiv.style.color = 'var(--danger)';
+      } else {
+        console.log('Signup réussi:', data);
+        errorDiv.textContent = '✅ Compte créé ! Vérifiez votre email (ou connectez-vous directement si confirmation désactivée)';
+        errorDiv.style.color = 'var(--success)';
+      }
+    }
+
+    async function login() {
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+      const errorDiv = document.getElementById('authError');
+      
+      if (!email || !password) {
+        errorDiv.textContent = '❌ Email et mot de passe requis';
+        errorDiv.style.color = 'var(--danger)';
+        return;
+      }
+      
+      errorDiv.textContent = '⏳ Connexion...';
+      errorDiv.style.color = 'var(--warning)';
+      
+      console.log('Tentative login avec:', email);
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        console.error('Erreur login:', error);
+        errorDiv.textContent = '❌ ' + error.message;
+        errorDiv.style.color = 'var(--danger)';
+      } else {
+        console.log('Login réussi:', data);
+      }
+    }
+
+    async function logout() { 
+      console.log('🚪 Déconnexion...');
+      try {
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) {
+          console.error('Erreur logout:', error);
+          alert('Erreur de déconnexion: ' + error.message);
+        } else {
+          console.log('✅ Déconnecté');
+          // Force reload pour être sûr
+          window.location.reload();
+        }
+      } catch (err) {
+        console.error('Exception logout:', err);
+        alert('Erreur: ' + err.message);
+      }
+    }
+
+    async function loadBottles() {
+      console.log('🔍 Chargement des bouteilles...');
+      console.log('User ID:', currentUser?.id);
+      
+      const { data, error } = await supabaseClient.from('bouteilles').select('*').order('created_at', { ascending: false });
+      
+      console.log('📦 Données reçues:', data);
+      console.log('❌ Erreur:', error);
+      
+      if (error) return console.error(error);
+      allBottles = data || [];
+      
+      console.log('✅ Nombre de bouteilles:', allBottles.length);
+      
+      displayBottles(allBottles);
+      updateStats(allBottles);
+    }
+
+    function displayBottles(bottles) {
+      const c = document.getElementById('bottlesContainer');
+      if (!bottles.length) {
+        c.innerHTML = '<div style="text-align:center;padding:4rem 2rem;color:var(--text-dim);"><div style="font-size:5rem;margin-bottom:1rem;">🍾</div><h2>Votre cave est vide</h2><p>Ajoutez votre première bouteille avec le bouton +</p></div>';
+        return;
+      }
+      c.innerHTML = ''; c.className = 'bottles-grid';
+      bottles.forEach(b => {
+        const percent = (b.volume_restant_ml / b.volume_ml * 100).toFixed(0);
+        const emoji = {vin:'🍷',whisky:'🥃',rhum:'🥃',vodka:'🍸',gin:'🍸',biere:'🍺',champagne:'🍾',liqueur:'🍹',cognac:'🥃'}[b.type_alcool]||'🍾';
+        const needsAlert = b.statut==='ouverte' && b.date_ouverture && b.duree_conservation_jours && 
+          (new Date() - new Date(b.date_ouverture))/86400000 >= b.duree_conservation_jours*0.8;
+        
+        c.innerHTML += `
+          <div class="bottle-card" onclick="openEditModal(${JSON.stringify(b).replace(/"/g, '&quot;')})">
+            <div class="bottle-image">
+              ${b.photo_url ? `<img src="${b.photo_url}">` : emoji}
+              <div class="bottle-status status-${b.statut}">${b.statut}</div>
+              ${needsAlert ? '<div class="bottle-alert">⚠️ À boire</div>' : ''}
+            </div>
+            <div class="bottle-content">
+              <div class="bottle-name">${b.nom}</div>
+              <div class="bottle-type">${b.type_alcool.toUpperCase()}${b.sous_type ? ' • '+b.sous_type : ''}</div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div>
+              <div class="bottle-details">
+                <span>${b.volume_restant_ml}/${b.volume_ml} ml</span>
+                <span>${b.nombre_bouteilles}x</span>
+                ${b.prix_achat ? `<span>${b.prix_achat} €</span>` : ''}
+              </div>
+            </div>
+          </div>`;
+      });
+    }
+
+    function filterBottles() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const type = document.getElementById('filterType').value;
+      const status = document.getElementById('filterStatus').value;
+      const filtered = allBottles.filter(b => 
+        (!search || b.nom.toLowerCase().includes(search)) &&
+        (!type || b.type_alcool === type) &&
+        (!status || b.statut === status)
+      );
+      displayBottles(filtered);
+    }
+
+    function updateStats(bottles) {
+      document.getElementById('statTotal').textContent = bottles.length;
+      document.getElementById('statValue').textContent = bottles.reduce((s,b) => s+(b.prix_achat||0)*b.nombre_bouteilles,0).toFixed(2)+' €';
+      document.getElementById('statVolume').textContent = (bottles.reduce((s,b) => s+b.volume_restant_ml,0)/1000).toFixed(1)+' L';
+      document.getElementById('statOpen').textContent = bottles.filter(b => b.statut==='ouverte').length;
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(tab+'Tab').classList.add('active');
+      if (tab === 'stats') createCharts();
+      if (tab === 'alerts') checkAlerts();
+      if (tab === 'account') loadProfile();
+    }
+
+    function createCharts() {
+      const types = {};
+      allBottles.forEach(b => types[b.type_alcool] = (types[b.type_alcool]||0) + 1);
+      
+      if (charts.type) charts.type.destroy();
+      charts.type = new Chart(document.getElementById('typeChart'), {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(types),
+          datasets: [{
+            data: Object.values(types),
+            backgroundColor: ['#8f5e26','#c49a6c','#ff9800','#4caf50','#2196f3','#9c27b0','#f44336','#00bcd4']
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { labels: { color: '#e0e0e0' } } } }
+      });
+
+      const sortedByValue = [...allBottles].sort((a,b) => (b.prix_achat||0)-(a.prix_achat||0)).slice(0,10);
+      if (charts.top) charts.top.destroy();
+      charts.top = new Chart(document.getElementById('topChart'), {
+        type: 'bar',
+        data: {
+          labels: sortedByValue.map(b => b.nom.substring(0,20)),
+          datasets: [{
+            label: 'Prix (€)',
+            data: sortedByValue.map(b => b.prix_achat||0),
+            backgroundColor: '#8f5e26'
+          }]
+        },
+        options: { responsive: true, scales: { y: { ticks: { color: '#e0e0e0' } }, x: { ticks: { color: '#e0e0e0' } } }, plugins: { legend: { labels: { color: '#e0e0e0' } } } }
+      });
+
+      const byMonth = {};
+      allBottles.forEach(b => {
+        if (b.date_achat) {
+          const m = b.date_achat.substring(0,7);
+          byMonth[m] = (byMonth[m]||0) + (b.prix_achat||0);
+        }
+      });
+      const months = Object.keys(byMonth).sort();
+      if (charts.value) charts.value.destroy();
+      charts.value = new Chart(document.getElementById('valueChart'), {
+        type: 'line',
+        data: {
+          labels: months,
+          datasets: [{
+            label: 'Valeur cumulée (€)',
+            data: months.map((m,i) => months.slice(0,i+1).reduce((s,k) => s+byMonth[k],0)),
+            borderColor: '#c49a6c',
+            backgroundColor: 'rgba(196,154,108,0.1)',
+            tension: 0.4
+          }]
+        },
+        options: { responsive: true, scales: { y: { ticks: { color: '#e0e0e0' } }, x: { ticks: { color: '#e0e0e0' } } }, plugins: { legend: { labels: { color: '#e0e0e0' } } } }
+      });
+    }
+
+    async function checkAlerts() {
+      const alerts = [];
+      allBottles.forEach(b => {
+        if (b.statut === 'ouverte' && b.date_ouverture && b.duree_conservation_jours) {
+          const days = (new Date() - new Date(b.date_ouverture))/86400000;
+          if (days >= b.duree_conservation_jours * 0.8) {
+            alerts.push({type:'warning', text:`⚠️ ${b.nom} : ouvert depuis ${Math.floor(days)} jours`});
+          }
+        }
+        if (b.volume_restant_ml < b.volume_ml * 0.2) {
+          alerts.push({type:'info', text:`📉 ${b.nom} : bientôt vide (${((b.volume_restant_ml/b.volume_ml)*100).toFixed(0)}%)`});
+        }
+      });
+      
+      const c = document.getElementById('alertsContainer');
+      if (!alerts.length) {
+        c.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-dim);"><div style="font-size:4rem;">✅</div><h3>Aucune alerte</h3><p>Votre cave est en parfait état</p></div>';
+      } else {
+        c.innerHTML = alerts.map(a => `<div class="alert-card">${a.text}</div>`).join('');
+      }
+    }
+
+    function toggleFabMenu() {
+      const menu = document.getElementById('fabMenu');
+      const btn = document.getElementById('fabBtn');
+      menu.classList.toggle('active');
+      btn.style.transform = menu.classList.contains('active') ? 'rotate(45deg)' : 'rotate(0)';
+    }
+
+    function closeFabMenu() {
+      document.getElementById('fabMenu').classList.remove('active');
+      document.getElementById('fabBtn').style.transform = 'rotate(0)';
+    }
+
+    function openAddModal() {
+      editingBottleId = null;
+      uploadedPhoto = null;
+      document.getElementById('modalTitle').textContent = 'Ajouter une bouteille';
+      document.getElementById('bottleForm').reset();
+      document.getElementById('imagePreview').style.display = 'none';
+      document.getElementById('uploadText').textContent = 'Cliquez pour ajouter une photo';
+      document.getElementById('deleteBtn').style.display = 'none';
+      document.getElementById('bottleModal').classList.add('active');
+    }
+
+    function openEditModal(bottle) {
+      editingBottleId = bottle.id;
+      uploadedPhoto = null;
+      document.getElementById('modalTitle').textContent = 'Modifier la bouteille';
+      document.getElementById('inputNom').value = bottle.nom;
+      document.getElementById('inputType').value = bottle.type_alcool;
+      document.getElementById('inputDegre').value = bottle.degre_alcool||'';
+      document.getElementById('inputVolume').value = bottle.volume_ml;
+      document.getElementById('inputNombre').value = bottle.nombre_bouteilles;
+      document.getElementById('inputPrix').value = bottle.prix_achat||'';
+      document.getElementById('inputDateAchat').value = bottle.date_achat||'';
+      document.getElementById('inputPays').value = bottle.pays||'';
+      document.getElementById('inputMillesime').value = bottle.millesime||'';
+      document.getElementById('inputCommentaire').value = bottle.commentaire||'';
+      document.getElementById('inputCodeBarre').value = bottle.code_barre||'';
+      
+      if (bottle.photo_url) {
+        document.getElementById('imagePreview').src = bottle.photo_url;
+        document.getElementById('imagePreview').style.display = 'block';
+        document.getElementById('uploadText').textContent = 'Modifier la photo';
+      } else {
+        document.getElementById('imagePreview').style.display = 'none';
+        document.getElementById('uploadText').textContent = 'Cliquez pour ajouter une photo';
+      }
+      
+      document.getElementById('deleteBtn').style.display = 'block';
+      document.getElementById('bottleModal').classList.add('active');
+      updatePairings();
+    }
+
+    function closeModal() {
+      document.getElementById('bottleModal').classList.remove('active');
+    }
+
+    function updatePairings() {
+      const type = document.getElementById('inputType').value;
+      const pairings = FOOD_PAIRINGS[type] || [];
+      const list = document.getElementById('pairingsList');
+      const section = document.getElementById('pairingsSection');
+      
+      if (pairings.length) {
+        list.innerHTML = pairings.map(p => `<li class="pairing-item">${p}</li>`).join('');
+        section.style.display = 'block';
+      } else {
+        section.style.display = 'none';
+      }
+    }
+
+    async function previewImage(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      uploadedPhoto = file;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        document.getElementById('imagePreview').src = ev.target.result;
+        document.getElementById('imagePreview').style.display = 'block';
+        document.getElementById('uploadText').textContent = 'Modifier la photo';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function uploadPhoto(file) {
+      const fileName = `${Date.now()}_${file.name}`;
+      const { data, error } = await supabaseClient.storage.from('bouteilles-photos').upload(fileName, file);
+      if (error) throw error;
+      const { data: { publicUrl } } = supabaseClient.storage.from('bouteilles-photos').getPublicUrl(fileName);
+      return publicUrl;
+    }
+
+    async function saveBottle(e) {
+      e.preventDefault();
+      
+      console.log('💾 Enregistrement bouteille...');
+      
+      let photoUrl = null;
+      if (uploadedPhoto) {
+        try {
+          showNotification('📤 Upload photo...');
+          photoUrl = await uploadPhoto(uploadedPhoto);
+          console.log('Photo uploadée:', photoUrl);
+        } catch (err) {
+          console.error('Erreur upload photo:', err);
+          alert('Erreur upload photo: ' + err.message);
+        }
+      }
+
+      // Récupération des valeurs avec vérification
+      const nomValue = document.getElementById('inputNom')?.value || '';
+      const typeValue = document.getElementById('inputType')?.value || 'vin';
+      const degreValue = document.getElementById('inputDegre')?.value;
+      const volumeValue = document.getElementById('inputVolume')?.value;
+      const nombreValue = document.getElementById('inputNombre')?.value || '1';
+      const prixValue = document.getElementById('inputPrix')?.value;
+      const dateAchatValue = document.getElementById('inputDateAchat')?.value;
+      const paysValue = document.getElementById('inputPays')?.value;
+      const millesimeValue = document.getElementById('inputMillesime')?.value;
+      const commentaireValue = document.getElementById('inputCommentaire')?.value;
+      const codeBarreValue = document.getElementById('inputCodeBarre')?.value;
+
+      if (!nomValue || !volumeValue) {
+        alert('Le nom et le volume sont obligatoires !');
+        return;
+      }
+
+      const bottleData = {
+        nom: nomValue,
+        type_alcool: typeValue,
+        degre_alcool: degreValue ? parseFloat(degreValue) : null,
+        volume_ml: parseInt(volumeValue),
+        nombre_bouteilles: parseInt(nombreValue),
+        prix_achat: prixValue ? parseFloat(prixValue) : null,
+        date_achat: dateAchatValue || null,
+        pays: paysValue || null,
+        millesime: millesimeValue ? parseInt(millesimeValue) : null,
+        commentaire: commentaireValue || null,
+        code_barre: codeBarreValue || null,
+        user_id: currentUser.id
+      };
+
+      if (photoUrl) bottleData.photo_url = photoUrl;
+
+      console.log('Données à enregistrer:', bottleData);
+
+      let error;
+      if (editingBottleId) {
+        delete bottleData.user_id;
+        console.log('Mise à jour bouteille:', editingBottleId);
+        ({ error } = await supabaseClient.from('bouteilles').update(bottleData).eq('id', editingBottleId));
+      } else {
+        bottleData.volume_restant_ml = bottleData.volume_ml;
+        bottleData.statut = 'scellee';
+        console.log('Création nouvelle bouteille');
+        ({ error } = await supabaseClient.from('bouteilles').insert([bottleData]));
+      }
+
+      if (error) {
+        console.error('❌ Erreur Supabase:', error);
+        alert('Erreur d\'enregistrement: ' + error.message);
+        return;
+      }
+      
+      console.log('✅ Bouteille enregistrée');
+      showNotification(editingBottleId ? 'Bouteille mise à jour !' : 'Bouteille ajoutée !');
+      closeModal();
+      loadBottles();
+    }
+
+    async function deleteBottle() {
+      if (!confirm('Supprimer cette bouteille ?')) return;
+      const { error } = await supabaseClient.from('bouteilles').delete().eq('id', editingBottleId);
+      if (error) return alert('Erreur: ' + error.message);
+      showNotification('Bouteille supprimée !');
+      closeModal();
+      loadBottles();
+    }
+
+    async function openScanModal() {
+      document.getElementById('scanModal').classList.add('active');
+      document.getElementById('scanResult').textContent = '';
+      
+      const video = document.getElementById('scannerVideo');
+      
+      try {
+        console.log('📷 Demande accès caméra...');
+        
+        // Demander accès caméra
+        scannerStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'environment' } 
+        });
+        
+        console.log('✅ Caméra accessible');
+        
+        video.srcObject = scannerStream;
+        await video.play();
+        
+        console.log('✅ Vidéo démarrée');
+        
+        // Initialiser le lecteur de code-barre
+        if (!codeReader) {
+          codeReader = new ZXing.BrowserBarcodeReader();
+          console.log('✅ Lecteur ZXing initialisé');
+        }
+        
+        // Scanner en continu
+        codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+          if (result) {
+            console.log('✅ Code détecté:', result.text);
+            document.getElementById('scanResult').textContent = '✅ Code: ' + result.text;
+            
+            // Arrêter le scan et chercher le produit
+            closeScanModal();
+            setTimeout(() => {
+              searchProductByBarcode(result.text);
+            }, 300);
+          }
+          // Ignorer les erreurs de scan continu (normal pendant le scan)
+          if (err && !(err instanceof ZXing.NotFoundException)) {
+            console.error('Erreur scan:', err);
+          }
+        });
+        
+      } catch (err) {
+        console.error('❌ Erreur caméra:', err);
+        alert('Impossible d\'accéder à la caméra.\n\nErreur: ' + err.message + '\n\nVérifiez les permissions dans les paramètres du navigateur.');
+        closeScanModal();
+      }
+    }
+
+    function closeScanModal() {
+      console.log('🔒 Fermeture scanner...');
+      
+      // Arrêter la vidéo
+      const video = document.getElementById('scannerVideo');
+      if (video && video.srcObject) {
+        video.srcObject.getTracks().forEach(track => {
+          track.stop();
+          console.log('Track arrêté:', track.kind);
+        });
+        video.srcObject = null;
+      }
+      
+      // Arrêter le stream
+      if (scannerStream) {
+        scannerStream.getTracks().forEach(track => track.stop());
+        scannerStream = null;
+      }
+      
+      // Réinitialiser le lecteur
+      if (codeReader) {
+        try {
+          codeReader.reset();
+          console.log('✅ Lecteur reset');
+        } catch (e) {
+          console.warn('Erreur reset lecteur:', e);
+        }
+      }
+      
+      document.getElementById('scanModal').classList.remove('active');
+      document.getElementById('scanResult').textContent = '';
+      console.log('✅ Scanner fermé');
+    }
+
+    async function searchProductByBarcode(code) {
+      console.log('🔍 Recherche produit:', code);
+      
+      // === API 1: Open Food Facts ===
+      try {
+        const res1 = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+        const data1 = await res1.json();
+        
+        if (data1.status === 1 && data1.product && data1.product.product_name) {
+          const p = data1.product;
+          console.log('✅ Trouvé sur Open Food Facts');
+          
+          openAddModal();
+          
+          setTimeout(() => {
+            const nomField = document.getElementById('inputNom');
+            const codeBarre = document.getElementById('inputCodeBarre');
+            const degreField = document.getElementById('inputDegre');
+            const preview = document.getElementById('imagePreview');
+            const uploadText = document.getElementById('uploadText');
+            
+            if (nomField) nomField.value = p.product_name || '';
+            if (codeBarre) codeBarre.value = code;
+            if (degreField && p.alcohol_100g) degreField.value = parseFloat(p.alcohol_100g);
+            if (p.image_url && preview) {
+              preview.src = p.image_url;
+              preview.style.display = 'block';
+              if (uploadText) uploadText.textContent = 'Image du produit';
+            }
+          }, 200);
+          
+          showNotification('✅ Produit trouvé (Open Food Facts)');
+          return;
+        }
+      } catch (err1) {
+        console.error('Erreur Open Food Facts:', err1);
+      }
+      
+      // === API 2: UPC Database ===
+      try {
+        const res2 = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${code}`);
+        const data2 = await res2.json();
+        
+        if (data2.items && data2.items.length > 0) {
+          const item = data2.items[0];
+          console.log('✅ Trouvé sur UPC Database');
+          
+          openAddModal();
+          
+          setTimeout(() => {
+            const nomField = document.getElementById('inputNom');
+            const codeBarre = document.getElementById('inputCodeBarre');
+            const paysField = document.getElementById('inputPays');
+            const preview = document.getElementById('imagePreview');
+            const uploadText = document.getElementById('uploadText');
+            
+            if (nomField) nomField.value = item.title || '';
+            if (codeBarre) codeBarre.value = code;
+            if (paysField && item.brand) paysField.value = item.brand;
+            if (item.images && item.images.length > 0 && preview) {
+              preview.src = item.images[0];
+              preview.style.display = 'block';
+              if (uploadText) uploadText.textContent = 'Image du produit';
+            }
+          }, 200);
+          
+          showNotification('✅ Produit trouvé (UPC Database)');
+          return;
+        }
+      } catch (err2) {
+        console.error('Erreur UPC Database:', err2);
+      }
+      
+      // === API 3: TheCocktailDB (par nom - recherche approximative) ===
+      try {
+        // TheCocktailDB n'a pas de recherche par code-barre, mais on peut chercher des ingrédients
+        const res3 = await fetch(`https://www.thecocktaildb.com/api/json/v1/1/search.php?i=${code}`);
+        const data3 = await res3.json();
+        
+        if (data3.ingredients && data3.ingredients.length > 0) {
+          const ingredient = data3.ingredients[0];
+          console.log('✅ Trouvé sur TheCocktailDB');
+          
+          openAddModal();
+          
+          setTimeout(() => {
+            const nomField = document.getElementById('inputNom');
+            const codeBarre = document.getElementById('inputCodeBarre');
+            const typeField = document.getElementById('inputType');
+            const degreField = document.getElementById('inputDegre');
+            const commentField = document.getElementById('inputCommentaire');
+            
+            if (nomField) nomField.value = ingredient.strIngredient || '';
+            if (codeBarre) codeBarre.value = code;
+            if (typeField) typeField.value = ingredient.strAlcohol === 'Yes' ? 'liqueur' : 'autre';
+            if (degreField && ingredient.strABV) degreField.value = parseFloat(ingredient.strABV);
+            if (commentField && ingredient.strDescription) commentField.value = ingredient.strDescription;
+          }, 200);
+          
+          showNotification('✅ Ingrédient trouvé (TheCocktailDB)');
+          return;
+        }
+      } catch (err3) {
+        console.error('Erreur TheCocktailDB:', err3);
+      }
+      
+      // === API 4: Barcode Lookup (gratuite avec limite) ===
+      try {
+        const res4 = await fetch(`https://api.barcodelookup.com/v3/products?barcode=${code}&formatted=y&key=YOUR_API_KEY`);
+        const data4 = await res4.json();
+        
+        if (data4.products && data4.products.length > 0) {
+          const product = data4.products[0];
+          console.log('✅ Trouvé sur Barcode Lookup');
+          
+          openAddModal();
+          
+          setTimeout(() => {
+            const nomField = document.getElementById('inputNom');
+            const codeBarre = document.getElementById('inputCodeBarre');
+            const paysField = document.getElementById('inputPays');
+            const preview = document.getElementById('imagePreview');
+            const uploadText = document.getElementById('uploadText');
+            
+            if (nomField) nomField.value = product.title || product.product_name || '';
+            if (codeBarre) codeBarre.value = code;
+            if (paysField && product.brand) paysField.value = product.brand;
+            if (product.images && product.images.length > 0 && preview) {
+              preview.src = product.images[0];
+              preview.style.display = 'block';
+              if (uploadText) uploadText.textContent = 'Image du produit';
+            }
+          }, 200);
+          
+          showNotification('✅ Produit trouvé (Barcode Lookup)');
+          return;
+        }
+      } catch (err4) {
+        console.error('Erreur Barcode Lookup:', err4);
+      }
+      
+      // === Rien trouvé - ouvrir formulaire vide avec code-barre ===
+      console.log('❌ Produit non trouvé sur aucune API, code-barre:', code);
+      openAddModal();
+      
+      setTimeout(() => {
+        const codeBarre = document.getElementById('inputCodeBarre');
+        console.log('Champ code-barre:', codeBarre);
+        if (codeBarre) {
+          codeBarre.value = code;
+          console.log('✅ Code-barre rempli:', codeBarre.value);
+        } else {
+          console.error('❌ Champ inputCodeBarre introuvable !');
+        }
+      }, 200);
+      
+      showNotification('⚠️ Produit non trouvé dans les bases. Code: ' + code);
+    }
+
+    async function exportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      doc.setFontSize(20);
+      doc.text('Ma Cave à Alcools', 105, 15, { align: 'center' });
+      doc.setFontSize(10);
+      doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 105, 22, { align: 'center' });
+      
+      const tableData = allBottles.map(b => [
+        b.nom,
+        b.type_alcool,
+        `${b.volume_restant_ml}/${b.volume_ml} ml`,
+        b.nombre_bouteilles,
+        b.prix_achat ? `${b.prix_achat} €` : '-',
+        b.statut
+      ]);
+      
+      doc.autoTable({
+        startY: 30,
+        head: [['Nom', 'Type', 'Volume', 'Qté', 'Prix', 'Statut']],
+        body: tableData,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [143, 94, 38] }
+      });
+      
+      doc.save('ma-cave.pdf');
+      showNotification('PDF exporté !');
+    }
+
+    function exportExcel() {
+      const data = allBottles.map(b => ({
+        Nom: b.nom,
+        Type: b.type_alcool,
+        'Degré (%)': b.degre_alcool,
+        'Volume (ml)': b.volume_ml,
+        'Restant (ml)': b.volume_restant_ml,
+        Quantité: b.nombre_bouteilles,
+        'Prix (€)': b.prix_achat,
+        Statut: b.statut,
+        Pays: b.pays,
+        Millésime: b.millesime,
+        'Date achat': b.date_achat,
+        Commentaire: b.commentaire
+      }));
+      
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Ma Cave');
+      XLSX.writeFile(wb, 'ma-cave.xlsx');
+      showNotification('Excel exporté !');
+    }
+
+    function showNotification(text) {
+      const notif = document.createElement('div');
+      notif.className = 'notification';
+      notif.textContent = text;
+      document.body.appendChild(notif);
+      setTimeout(() => notif.remove(), 3000);
+    }
+
+    function requestNotificationPermission() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+
+    function sendNotification(title, body) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '🍷' });
+      }
+    }
+
+    setInterval(() => {
+      allBottles.forEach(b => {
+        if (b.statut === 'ouverte' && b.date_ouverture && b.duree_conservation_jours) {
+          const days = (new Date() - new Date(b.date_ouverture))/86400000;
+          if (Math.floor(days) === Math.floor(b.duree_conservation_jours * 0.8)) {
+            sendNotification('🔔 Alerte Cave', `${b.nom} devrait être consommé rapidement !`);
+          }
+        }
+      });
+    }, 3600000);
+
+    async function loadProfile() {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+      
+      if (data) {
+        document.getElementById('profileEmail').value = data.email;
+        document.getElementById('profileUsername').value = data.username || '';
+        document.getElementById('profileRole').value = data.role === 'admin' ? '👑 Administrateur' : '👤 Utilisateur';
+      }
+    }
+
+    async function updateProfile() {
+      const username = document.getElementById('profileUsername').value;
+      
+      const { error } = await supabaseClient
+        .from('profiles')
+        .update({ username })
+        .eq('id', currentUser.id);
+      
+      if (error) {
+        alert('Erreur: ' + error.message);
+      } else {
+        showNotification('Profil mis à jour !');
+      }
+    }
+
+    async function changePassword() {
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      
+      if (!newPassword || newPassword.length < 6) {
+        alert('Le mot de passe doit contenir au moins 6 caractères');
+        return;
+      }
+      
+      if (newPassword !== confirmPassword) {
+        alert('Les mots de passe ne correspondent pas');
+        return;
+      }
+      
+      const { error } = await supabaseClient.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (error) {
+        alert('Erreur: ' + error.message);
+      } else {
+        showNotification('Mot de passe changé avec succès !');
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+      }
+    }
+
+    async function deleteAccount() {
+      if (!confirm('⚠️ ATTENTION : Cette action est irréversible !\n\nToutes vos bouteilles seront supprimées.\n\nÊtes-vous sûr de vouloir supprimer votre compte ?')) {
+        return;
+      }
+      
+      if (!confirm('Dernière confirmation : Voulez-vous vraiment supprimer votre compte ?')) {
+        return;
+      }
+      
+      // Supprimer l'utilisateur (cascade supprimera automatiquement les données)
+      const { error } = await supabaseClient.auth.admin.deleteUser(currentUser.id);
+      
+      if (error) {
+        // Si admin.deleteUser ne fonctionne pas, on déconnecte juste
+        alert('Contactez un administrateur pour supprimer votre compte.');
+        await supabaseClient.auth.signOut();
+      } else {
+        showNotification('Compte supprimé');
+        await supabaseClient.auth.signOut();
+      }
+    }
+
+    init();
+  </script>
 </body>
 </html>
