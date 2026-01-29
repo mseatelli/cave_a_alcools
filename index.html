@@ -196,8 +196,23 @@
             <div class="form-group"><label>Degré (%)</label><input type="number" id="inputDegre" step="0.1" min="0" max="100"></div>
           </div>
           <div class="form-row">
-            <div class="form-group"><label>Volume (ml) *</label><input type="number" id="inputVolume" required></div>
+            <div class="form-group"><label>Volume (ml) *</label><input type="number" id="inputVolume" required placeholder="Ex: 750"></div>
             <div class="form-group"><label>Nombre</label><input type="number" id="inputNombre" value="1" min="1"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Statut *</label>
+              <select id="inputStatut" required>
+                <option value="scellee">🔒 Scellée (non ouverte)</option>
+                <option value="ouverte">🍾 Ouverte (entamée)</option>
+                <option value="vide">❌ Vide (terminée)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Restant (%)</label>
+              <input type="number" id="inputPourcentage" min="0" max="100" value="100" placeholder="100">
+              <small style="display:block;color:var(--text-dim);margin-top:0.3rem;font-size:0.85rem;">100% = pleine, 50% = moitié, 0% = vide</small>
+            </div>
           </div>
           <div class="form-row">
             <div class="form-group"><label>Prix (€)</label><input type="number" id="inputPrix" step="0.01" min="0"></div>
@@ -226,8 +241,8 @@
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://tluwuifaoyxckudszrnd.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsdXd1aWZhb3l4Y2t1ZHN6cm5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODYzMTMsImV4cCI6MjA4Mjk2MjMxM30.-cT8W6RH-OJDsJigGsY6iGsDAvKDRHm6cOLM5WJAWdM';
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null, allBottles = [], editingBottleId = null, uploadedPhoto = null, scannerStream = null, codeReader = null, charts = {};
 
@@ -312,12 +327,8 @@
       allBottles.forEach(b => {
         if(b.statut==='ouverte'&&b.date_ouverture&&b.duree_conservation_jours) {
           const days = (new Date()-new Date(b.date_ouverture))/86400000;
-          if(days >= b.duree_conservation_jours*0.8) alerts.push({text:`⚠️ ${b.nom} ouvert depuis ${Math.floor(days)} jours`});
-        }
-        if(b.volume_restant_ml < b.volume_ml*0.2) alerts.push({text:`📉 ${b.nom} bientôt vide`});
-      });
-      const c = document.getElementById('alertsContainer');
-      c.innerHTML = alerts.length ? alerts.map(a=>`<div class="alert-card">${a.text}</div>`).join('') : '<div style="text-align:center;padding:3rem;color:var(--text-dim);"><div style="font-size:4rem;">✅</div><h3>Aucune alerte</h3></div>';
+          if(days >= b.duree_conservation_jours*0.8) alerts.push({text:`⚠️ ${b.nom} ouvert depuis ${Math.floor(days)} j
+          padding:3rem;color:var(--text-dim);"><div style="font-size:4rem;">✅</div><h3>Aucune alerte</h3></div>';
     }
 
     function toggleFabMenu() {
