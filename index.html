@@ -5,114 +5,84 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ma Cave Pro 2026</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
-      --primary: #8f5e26; --primary-dark: #6d4419; --secondary: #c49a6c;
-      --bg: #1a1a1a; --bg-card: #2a2a2a; --text: #e0e0e0; --text-dim: #a0a0a0;
-      --success: #4caf50; --warning: #ff9800; --danger: #f44336; --pastis: #ffeb3b;
+      --gold: #8f5e26; --dark: #121212; --card: #1e1e1e; --text: #e0e0e0;
+      --accent: #c49a6c; --danger: #f44336; --success: #4caf50;
     }
-    body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: var(--text); margin: 0; padding-bottom: 80px; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 1rem; }
     
-    /* Header & Navigation */
-    header { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); padding: 1.2rem 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-    header .container { display: flex; justify-content: space-between; align-items: center; }
-    .user-info { display: flex; gap: 0.5rem; }
+    /* Barre d'outils */
+    .toolbar { background: #1a1a1a; padding: 1rem; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; }
+    .filter-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .search-input { flex-grow: 2; min-width: 200px; }
+
+    /* Cartes */
+    .bottles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1rem; }
+    .bottle-card { background: var(--card); border-radius: 12px; border: 1px solid #333; overflow: hidden; position: relative; cursor: pointer; transition: 0.2s; }
+    .bottle-card:hover { border-color: var(--gold); }
+    .bottle-img { width: 100%; height: 200px; object-fit: cover; background: #000; }
+    .card-body { padding: 1rem; }
     
-    /* Buttons */
-    button { background: var(--primary); color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-    button:hover { background: var(--primary-dark); transform: translateY(-1px); }
-    .btn-secondary { background: var(--bg-card); border: 1px solid var(--secondary); }
-    .btn-danger { background: var(--danger); }
-    .btn-buy { background: var(--success); font-size: 0.7rem; padding: 4px 8px; margin-top: 5px; display: inline-block; text-decoration: none; color: white; border-radius: 4px; }
+    /* Alertes et Badges */
+    .badge-racheter { background: var(--danger); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; position: absolute; top: 10px; right: 10px; }
+    .progress-bar { height: 6px; background: #333; border-radius: 3px; margin: 10px 0; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--gold); transition: width 0.3s; }
+    .progress-fill.low { background: var(--danger); }
 
-    /* Tabs */
-    .tabs { display: flex; gap: 1rem; margin: 1.5rem 0; border-bottom: 2px solid #333; }
-    .tab { padding: 1rem; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem; }
-    .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); font-weight: bold; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    /* Grid & Cards */
-    .bottles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
-    .bottle-card { background: var(--bg-card); border-radius: 12px; padding: 1.5rem; border: 1px solid #333; cursor: pointer; position: relative; transition: 0.3s; }
-    .bottle-card:hover { border-color: var(--primary); box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+    /* Formulaire */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; overflow-y: auto; }
+    .modal.active { display: block; }
+    .modal-content { background: var(--card); padding: 2rem; border-radius: 15px; max-width: 600px; margin: 2rem auto; }
     
-    .alert-badge { position: absolute; top: 10px; right: 10px; background: var(--danger); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-    .progress-bar { width: 100%; height: 8px; background: #111; border-radius: 4px; margin: 12px 0; overflow: hidden; }
-    .progress-fill { height: 100%; transition: 0.5s; }
-
-    /* Stats Cards */
-    .stats-header { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
-    .stat-box { background: var(--bg-card); padding: 1.5rem; border-radius: 12px; text-align: center; border: 1px solid #333; }
-
-    /* Modals & Forms */
-    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
-    .modal.active { display: flex; }
-    .modal-content { background: var(--bg-card); padding: 2rem; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #444; }
-    input, select { width: 100%; padding: 0.8rem; margin: 0.5rem 0 1.2rem 0; background: var(--bg); border: 1px solid #444; border-radius: 8px; color: white; }
-    label { color: var(--secondary); font-size: 0.85rem; font-weight: bold; }
-
-    .fab { position: fixed; bottom: 2rem; right: 2rem; width: 60px; height: 60px; border-radius: 50%; background: var(--primary); font-size: 2rem; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 90; }
-    .offline-badge { background: var(--warning); color: black; padding: 2px 10px; border-radius: 10px; font-size: 0.7rem; display: none; font-weight: bold; }
+    input, select, textarea { width: 100%; padding: 10px; background: #000; border: 1px solid #444; color: white; border-radius: 6px; margin-top: 5px; box-sizing: border-box; }
+    label { font-size: 0.8rem; color: var(--accent); font-weight: bold; }
+    
+    .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .btn-gold { background: var(--gold); color: white; }
+    .btn-outline { background: transparent; border: 1px solid #444; color: white; }
+    .fab { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; z-index: 90; }
   </style>
 </head>
 <body onload="init()">
 
-  <div id="authScreen" style="min-height:100vh; display:flex; align-items:center; justify-content:center;">
-    <div style="background:var(--bg-card); padding:2.5rem; border-radius:16px; width:90%; max-width:400px; text-align:center;">
-      <h2 style="margin-bottom:1.5rem; color:var(--secondary)">🍷 Ma Cave Privée</h2>
-      <input type="email" id="authEmail" placeholder="Email">
+  <div id="authScreen" style="height:100vh; display:flex; align-items:center; justify-content:center; text-align:center;">
+    <div style="background:var(--card); padding:2rem; border-radius:12px; width:300px;">
+      <h2 style="color:var(--gold)">Ma Cave Expert</h2>
+      <input type="email" id="authEmail" placeholder="Email" style="margin-top:10px">
       <input type="password" id="authPassword" placeholder="Mot de passe">
-      <button onclick="login()" style="width:100%">Se connecter</button>
-      <div id="authError" style="color:var(--danger); margin-top:1rem; font-size:0.8rem;"></div>
+      <button onclick="login()" class="btn btn-gold" style="width:100%; margin-top:15px">Entrer</button>
     </div>
   </div>
 
   <div id="mainApp" style="display:none">
-    <header>
-      <div class="container">
-        <h1>Cave Pro <span id="offlineStatus" class="offline-badge">HORS-LIGNE</span></h1>
-        <div class="user-info">
-          <button onclick="exportPDF()" class="btn-secondary">PDF</button>
-          <button onclick="exportExcel()" class="btn-secondary">Excel</button>
-          <button onclick="logout()" class="btn-danger">Quitter</button>
-        </div>
+    <div class="toolbar">
+      <div class="container filter-grid">
+        <input type="text" id="searchBar" class="search-input" placeholder="Rechercher..." oninput="renderBottles()">
+        <select id="filterType" onchange="renderBottles()" style="width: auto;">
+          <option value="all">Tous les alcools</option>
+          <option value="whisky">Whisky</option>
+          <option value="vin">Vin</option>
+          <option value="rhum">Rhum</option>
+          <option value="gin">Gin</option>
+          <option value="cognac">Cognac</option>
+          <option value="armagnac">Armagnac</option>
+          <option value="aperitif">Apéritif</option>
+        </select>
+        <select id="sortBy" onchange="renderBottles()" style="width: auto;">
+          <option value="newest">Nouveautés</option>
+          <option value="note">Meilleures notes</option>
+          <option value="price">Prix</option>
+          <option value="name">Nom</option>
+        </select>
+        <button onclick="logout()" class="btn btn-outline" style="padding: 5px 10px;">Sortir</button>
       </div>
-    </header>
+    </div>
 
     <div class="container">
-      <div class="tabs">
-        <button class="tab active" onclick="switchTab('collection')">Ma Collection</button>
-        <button class="tab" onclick="switchTab('stats')">Statistiques</button>
-      </div>
-
-      <div id="collectionTab" class="tab-content active">
-        <div id="bottlesContainer">Chargement...</div>
-      </div>
-
-      <div id="statsTab" class="tab-content">
-        <div class="stats-header">
-            <div class="stat-box" style="border-color: var(--success)">
-                <small style="color:var(--text-dim)">Valeur Totale</small>
-                <div id="totalValue" style="font-size:1.6rem; font-weight:bold; color:var(--success)">0.00 €</div>
-            </div>
-            <div class="stat-box" style="border-color: var(--primary)">
-                <small style="color:var(--text-dim)">Stock Total</small>
-                <div id="totalLitres" style="font-size:1.6rem; font-weight:bold;">0 L</div>
-            </div>
-        </div>
-        <div style="background:var(--bg-card); padding:1.5rem; border-radius:12px;">
-            <canvas id="typeChart"></canvas>
-        </div>
-      </div>
+      <div id="bottlesContainer" class="bottles-grid"></div>
     </div>
 
     <div class="fab" onclick="openAddModal()">+</div>
@@ -120,32 +90,45 @@
 
   <div id="bottleModal" class="modal">
     <div class="modal-content">
-      <h2 id="modalTitle" style="margin-bottom:1rem;">Bouteille</h2>
+      <h3 id="modalTitle">Bouteille</h3>
       <form id="bottleForm" onsubmit="saveBottle(event)">
-        <label>Nom</label><input type="text" id="inputNom" required>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div>
-                <label>Type</label>
-                <select id="inputType">
-                  <option value="pastis">Pastis</option>
-                  <option value="vin">Vin</option>
-                  <option value="whisky">Whisky</option>
-                  <option value="rhum">Rhum</option>
-                  <option value="gin">Gin</option>
-                  <option value="biere">Bière</option>
-                </select>
-            </div>
-            <div>
-                <label>Volume (ml)</label>
-                <input type="number" id="inputVolume" value="750">
-            </div>
+        <label>Nom de la bouteille *</label><input type="text" id="f_nom" required>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+          <div>
+            <label>Type</label>
+            <select id="f_type">
+              <option value="whisky">Whisky</option>
+              <option value="vin">Vin</option>
+              <option value="rhum">Rhum</option>
+              <option value="gin">Gin</option>
+              <option value="cognac">Cognac</option>
+              <option value="armagnac">Armagnac</option>
+              <option value="aperitif">Apéritif</option>
+            </select>
+          </div>
+          <div><label>Degré (%)</label><input type="number" id="f_degre" step="0.1"></div>
         </div>
-        <label>Remplissage : <span id="percentValue">100</span>%</label>
-        <input type="range" id="inputPercent" min="0" max="100" value="100" oninput="document.getElementById('percentValue').innerText = this.value">
-        <label>Prix (€)</label><input type="number" id="inputPrix" step="0.01">
-        <div style="display:flex; gap:1rem; margin-top:1rem;">
-          <button type="button" onclick="closeModal()" class="btn-secondary" style="flex:1">Annuler</button>
-          <button type="submit" style="flex:1">Sauvegarder</button>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+          <div><label>Prix Achat (€)</label><input type="number" id="f_prix" step="0.01"></div>
+          <div><label>Note / 10</label><input type="number" id="f_note" step="0.5" min="0" max="10"></div>
+        </div>
+
+        <div style="margin-top:10px;">
+            <label>Niveau actuel : <span id="valPct">100</span>%</label>
+            <input type="range" id="f_pct" min="0" max="100" value="100" oninput="document.getElementById('valPct').innerText=this.value">
+        </div>
+
+        <div style="margin-top:10px;">
+          <label>Photo (Fichier ou URL)</label>
+          <input type="file" id="f_file" accept="image/*">
+          <input type="text" id="f_photo_url" placeholder="Ou coller une URL d'image">
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+          <button type="button" onclick="closeModal()" class="btn btn-outline" style="flex:1">Annuler</button>
+          <button type="submit" class="btn btn-gold" style="flex:1">Enregistrer</button>
         </div>
       </form>
     </div>
@@ -153,161 +136,138 @@
 
   <script>
     const SUPABASE_URL = 'https://tluwuifaoyxckudszrnd.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsdXd1aWZhb3l4Y2t1ZHN6cm5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODYzMTMsImV4cCI6MjA4Mjk2MjMxM30.-cT8W6RH-OJDsJigGsY6iGsDAvKDRHm6cOLM5WJAWdM';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    let currentUser = null, allBottles = [], typeChart = null, editingBottleId = null;
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsdXd1aWZhb3l4Y2t1ZHN6cm5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODYzMTMsImV4cCI6MjA4Mjk2MjMxM30.-cT8W6RH-OJDsJigGsY6iGsDAvKDRHm6cOLM5WJAWdM';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let allBottles = [], currentUser = null, editingId = null;
 
     async function init() {
-      // Événements réseau
-      window.addEventListener('online', () => { document.getElementById('offlineStatus').style.display='none'; loadBottles(); });
-      window.addEventListener('offline', () => { document.getElementById('offlineStatus').style.display='inline'; });
-
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if(session) { currentUser = session.user; showMainApp(); }
-      
-      supabaseClient.auth.onAuthStateChange((e, s) => {
-        if(s) { currentUser = s.user; showMainApp(); } else { showAuthScreen(); }
-      });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        currentUser = session.user;
+        document.getElementById('authScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        loadData();
+      }
     }
-
-    function showAuthScreen() { document.getElementById('authScreen').style.display='flex'; document.getElementById('mainApp').style.display='none'; }
-    function showMainApp() { document.getElementById('authScreen').style.display='none'; document.getElementById('mainApp').style.display='block'; loadBottles(); }
 
     async function login() {
-      const email = document.getElementById('authEmail').value;
-      const password = document.getElementById('authPassword').value;
-      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) document.getElementById('authError').innerText = error.message;
+      const e = document.getElementById('authEmail').value;
+      const p = document.getElementById('authPassword').value;
+      const { error } = await supabase.auth.signInWithPassword({ email: e, password: p });
+      if (error) alert(error.message); else location.reload();
     }
 
-    function logout() { supabaseClient.auth.signOut(); localStorage.removeItem('local_bottles'); }
+    function logout() { supabase.auth.signOut(); location.reload(); }
 
-    // --- GESTION DES DONNÉES (SYNCHRO LOCALE) ---
-    async function loadBottles() {
-      // Charger le cache local immédiatement
-      const cached = localStorage.getItem('local_bottles');
-      if(cached) { allBottles = JSON.parse(cached); displayBottles(allBottles); }
-
-      try {
-          const { data, error } = await supabaseClient.from('bouteilles').select('*').order('nom');
-          if (!error && data) {
-              allBottles = data;
-              localStorage.setItem('local_bottles', JSON.stringify(allBottles));
-              displayBottles(allBottles);
-          }
-      } catch (e) { console.log("Hors-ligne : utilisation du cache."); }
+    async function loadData() {
+      const { data, error } = await supabase.from('bouteilles').select('*');
+      if (!error) { allBottles = data; renderBottles(); }
     }
 
-    function displayBottles(bottles) {
-      const c = document.getElementById('bottlesContainer');
-      if(!bottles.length) { c.innerHTML = "<p style='text-align:center; opacity:0.5'>La cave est vide.</p>"; return; }
-      
-      c.innerHTML = '<div class="bottles-grid">' + bottles.map(b => {
-        const pct = Math.round((b.volume_restant_ml / b.volume_ml) * 100);
-        const low = pct <= 10;
+    function renderBottles() {
+      const search = document.getElementById('searchBar').value.toLowerCase();
+      const type = document.getElementById('filterType').value;
+      const sort = document.getElementById('sortBy').value;
+
+      let list = allBottles.filter(b => {
+        const matchesSearch = b.nom.toLowerCase().includes(search);
+        const matchesType = type === 'all' || b.type_alcool === type;
+        return matchesSearch && matchesType;
+      });
+
+      list.sort((a, b) => {
+        if (sort === 'note') return b.note_perso - a.note_perso;
+        if (sort === 'price') return a.prix_achat - b.prix_achat;
+        if (sort === 'name') return a.nom.localeCompare(b.nom);
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+
+      const container = document.getElementById('bottlesContainer');
+      container.innerHTML = list.map(b => {
+        const pct = Math.round((b.volume_restant_ml / b.volume_ml) * 100) || 0;
+        const needsRefill = pct <= 10;
+        
         return `
-          <div class="bottle-card" onclick='openEditModal(${JSON.stringify(b)})'>
-            ${low ? '<div class="alert-badge">⚠️ VIDE</div>' : ''}
-            <strong>${b.nom}</strong><br>
-            <small style="color:var(--secondary); text-transform:uppercase;">${b.type_alcool}</small>
-            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%; background:${low ? 'var(--danger)' : 'var(--primary)'}"></div></div>
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+          <div class="bottle-card" onclick="openEditModal(${JSON.stringify(b).replace(/"/g, '&quot;')})">
+            ${needsRefill ? '<div class="badge-racheter">⚠️ RACHETER</div>' : ''}
+            <img src="${b.photo_url || 'https://via.placeholder.com/300x200?text=Image'}" class="bottle-img">
+            <div class="card-body">
+              <strong style="font-size:1.1rem">${b.nom}</strong><br>
+              <small style="color:var(--accent); text-transform:uppercase">${b.type_alcool}</small>
+              <div class="progress-bar">
+                <div class="progress-fill ${needsRefill ? 'low' : ''}" style="width: ${pct}%"></div>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
                 <span>${pct}% (${b.volume_restant_ml}ml)</span>
-                <span>${b.prix_achat}€</span>
+                <span style="color:var(--gold); font-weight:bold;">${b.note_perso || 0}/10</span>
+              </div>
             </div>
-            ${low ? `<a href="https://www.google.com/search?q=acheter+${encodeURIComponent(b.nom)}" target="_blank" class="btn-buy" onclick="event.stopPropagation()">Racheter</a>` : ''}
-          </div>`;
-      }).join('') + '</div>';
+          </div>
+        `;
+      }).join('');
     }
 
-    // --- FORMULAIRE & ACTIONS ---
-    function openAddModal() { editingBottleId = null; document.getElementById('bottleForm').reset(); document.getElementById('modalTitle').innerText="Nouvelle Bouteille"; document.getElementById('bottleModal').classList.add('active'); }
-    
+    async function saveBottle(e) {
+      e.preventDefault();
+      const file = document.getElementById('f_file').files[0];
+      let url = document.getElementById('f_photo_url').value;
+
+      if (file) {
+        const path = currentUser.id + '/' + Date.now() + '_' + file.name;
+        const { data, error } = await supabase.storage.from('bouteilles').upload(path, file);
+        if (!error) {
+          const { data: pUrl } = supabase.storage.from('bouteilles').getPublicUrl(path);
+          url = pUrl.publicUrl;
+        }
+      }
+
+      const vol = 700; // Par défaut
+      const pct = parseInt(document.getElementById('f_pct').value);
+
+      const obj = {
+        nom: document.getElementById('f_nom').value,
+        type_alcool: document.getElementById('f_type').value,
+        degre_alcool: parseFloat(document.getElementById('f_degre').value) || 0,
+        prix_achat: parseFloat(document.getElementById('f_prix').value) || 0,
+        note_perso: parseFloat(document.getElementById('f_note').value) || 0,
+        volume_ml: vol,
+        volume_restant_ml: (vol * pct) / 100,
+        photo_url: url,
+        user_id: currentUser.id
+      };
+
+      if (editingId) await supabase.from('bouteilles').update(obj).eq('id', editingId);
+      else await supabase.from('bouteilles').insert([obj]);
+
+      closeModal();
+      loadData();
+    }
+
+    function openAddModal() {
+      editingId = null;
+      document.getElementById('bottleForm').reset();
+      document.getElementById('valPct').innerText = "100";
+      document.getElementById('modalTitle').innerText = "Ajouter une bouteille";
+      document.getElementById('bottleModal').classList.add('active');
+    }
+
     function openEditModal(b) {
-      editingBottleId = b.id;
-      document.getElementById('modalTitle').innerText="Modifier";
-      document.getElementById('inputNom').value = b.nom;
-      document.getElementById('inputType').value = b.type_alcool;
-      document.getElementById('inputVolume').value = b.volume_ml;
+      editingId = b.id;
+      document.getElementById('f_nom').value = b.nom;
+      document.getElementById('f_type').value = b.type_alcool;
+      document.getElementById('f_degre').value = b.degre_alcool;
+      document.getElementById('f_prix').value = b.prix_achat;
+      document.getElementById('f_note').value = b.note_perso;
       const pct = Math.round((b.volume_restant_ml / b.volume_ml) * 100);
-      document.getElementById('inputPercent').value = pct;
-      document.getElementById('percentValue').innerText = pct;
-      document.getElementById('inputPrix').value = b.prix_achat;
+      document.getElementById('f_pct').value = pct;
+      document.getElementById('valPct').innerText = pct;
+      document.getElementById('f_photo_url').value = b.photo_url || '';
+      document.getElementById('modalTitle').innerText = "Modifier " + b.nom;
       document.getElementById('bottleModal').classList.add('active');
     }
 
     function closeModal() { document.getElementById('bottleModal').classList.remove('active'); }
-
-    async function saveBottle(e) {
-      e.preventDefault();
-      const vol = parseFloat(document.getElementById('inputVolume').value);
-      const pct = parseFloat(document.getElementById('inputPercent').value);
-      const data = {
-        nom: document.getElementById('inputNom').value,
-        type_alcool: document.getElementById('inputType').value,
-        volume_ml: vol,
-        volume_restant_ml: (vol * pct) / 100,
-        prix_achat: parseFloat(document.getElementById('inputPrix').value) || 0,
-        user_id: currentUser.id
-      };
-
-      if(editingBottleId) await supabaseClient.from('bouteilles').update(data).eq('id', editingBottleId);
-      else await supabaseClient.from('bouteilles').insert([data]);
-      
-      closeModal();
-      loadBottles();
-    }
-
-    // --- STATISTIQUES & EXPORTS ---
-    function switchTab(tab) {
-      document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
-      event.target.classList.add('active');
-      document.getElementById(tab+'Tab').classList.add('active');
-      if(tab === 'stats') updateStats();
-    }
-
-    function updateStats() {
-        let totalVal = 0, totalMl = 0;
-        const counts = {};
-        allBottles.forEach(b => {
-            counts[b.type_alcool] = (counts[b.type_alcool] || 0) + 1;
-            totalVal += parseFloat(b.prix_achat || 0);
-            totalMl += parseFloat(b.volume_ml || 0);
-        });
-
-        document.getElementById('totalValue').innerText = totalVal.toFixed(2) + " €";
-        document.getElementById('totalLitres').innerText = (totalMl / 1000).toFixed(1) + " L";
-
-        const ctx = document.getElementById('typeChart').getContext('2d');
-        const colors = { 'pastis': '#ffeb3b', 'vin': '#f44336', 'whisky': '#8f5e26', 'rhum': '#c49a6c', 'gin': '#2196f3', 'biere': '#ffa000' };
-        
-        if(typeChart) typeChart.destroy();
-        typeChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(counts),
-                datasets: [{ data: Object.values(counts), backgroundColor: Object.keys(counts).map(k => colors[k] || '#999'), borderWidth: 0 }]
-            },
-            options: { plugins: { legend: { position: 'bottom', labels: { color: 'white' } } } }
-        });
-    }
-
-    function exportPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      doc.text("Inventaire Cave", 14, 15);
-      const data = allBottles.map(b => [b.nom, b.type_alcool, `${Math.round((b.volume_restant_ml/b.volume_ml)*100)}%`, `${b.prix_achat}€`]);
-      doc.autoTable({ head: [['Nom', 'Type', 'Niveau', 'Prix']], body: data, startY: 20 });
-      doc.save("cave.pdf");
-    }
-
-    function exportExcel() {
-      const ws = XLSX.utils.json_to_sheet(allBottles);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Inventaire");
-      XLSX.writeFile(wb, "cave.xlsx");
-    }
   </script>
 </body>
 </html>
